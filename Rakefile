@@ -78,11 +78,11 @@ Spec = Gem::Specification.new do |s|
   s.platform          = Gem::Platform::RUBY
 
   s.has_rdoc          = true
-  s.rdoc_options      = %w(--title EventMachine --main README --line-numbers -x lib/em/version -x lib/emva -x lib/evma/ -x lib/pr_eventmachine -x lib/jeventmachine)
+  s.rdoc_options      = %w(--title EventMachine --main README --line-numbers -x lib/em/version -x lib/emva -x lib/evma/ -x lib/jeventmachine)
   s.extra_rdoc_files  = Dir['README,docs/*']
 
   excludes            = %w(.gitignore)
-  s.files             = `git ls-files`.split("\n") - excludes
+  s.files             = `git ls-files`.split("\n") - excludes rescue Errno::ENOENT
 
   s.require_path      = 'lib'
 
