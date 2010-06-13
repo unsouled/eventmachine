@@ -40,7 +40,10 @@ class EventableDescriptor: public Bindable_t
 		virtual ~EventableDescriptor();
 
 		int GetSocket() {return MySocket;}
-		void SetSocketInvalid() { MySocket = INVALID_SOCKET; }
+		void SetSocketInvalid() {
+			MySocket = INVALID_SOCKET;
+			MyEventMachine->ScheduleDelete(this);
+		}
 		void Close();
 
 		virtual void Read() = 0;

@@ -141,6 +141,8 @@ class EventMachine_t
 
 		uint64_t GetRealTime();
 
+		void ScheduleDelete(EventableDescriptor *ed);
+
 	private:
 		bool _RunOnce();
 		bool _RunTimers();
@@ -154,6 +156,7 @@ class EventMachine_t
 		bool _RunEpollOnce();
 		bool _RunKqueueOnce();
 
+    void _DeleteEpollEvent (EventableDescriptor*);
 		void _ModifyEpollEvent (EventableDescriptor*);
 		void _DispatchHeartbeats();
 		timeval _TimeTilNextEvent();
@@ -181,6 +184,7 @@ class EventMachine_t
 		vector<EventableDescriptor*> Descriptors;
 		vector<EventableDescriptor*> NewDescriptors;
 		set<EventableDescriptor*> ModifiedDescriptors;
+		set<EventableDescriptor*> DeletingDescriptors;
 
 		uint64_t NextHeartbeatTime;
 

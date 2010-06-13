@@ -674,7 +674,8 @@ timeval EventMachine_t::_TimeTilNextEvent()
 			next_event = timers->first;
 	}
 
-	if (!NewDescriptors.empty() || !ModifiedDescriptors.empty()) {
+	if (!NewDescriptors.empty() || !ModifiedDescriptors.empty() ||
+		!DeletingDescriptors.empty()) {
 		next_event = MyCurrentLoopTime;
 	}
 
@@ -701,8 +702,37 @@ EventMachine_t::_CleanupSockets
 
 void EventMachine_t::_CleanupSockets()
 {
-	// TODO, rip this out and only delete the descriptors we know have died,
-	// rather than traversing the whole list.
+	set<EventableDescriptor*>::iterator i = DeletingDescriptors.begin();
+	set<EventableDescriptor*>::iterator e = DeletingDescriptors.end();
+	while (i != e) {
+		assert (*i);
+		_DeleteEpollEvent (*i);
+		delete *i;
+		++i;
+	}
+	DeletingDescriptors.clear();
+}
+
+void EventMachine_t::ScheduleDelete(EventableDescriptor *ed) {
+	assert(ed);
+	vector<EventableDescriptor*>::iterator i = Descriptors.begin();
+	vector<EventableDescriptor*>::iterator e = Descriptors.end();
+	while (i != e) {
+		if (*i == ed){
+			Descriptors.erase(i);
+			break; // TODO  we're fast exiting the iteration here, but, yeah..
+		}
+		++i;
+	}
+	DeletingDescriptors.insert(ed);
+}
+
+/*********************************
+EventMachine_t::_DeleteEpollEvent
+*********************************/
+
+void EventMachine_t::_DeleteEpollEvent (EventableDescriptor *ed)
+{
 	// Modified 05Jan08 per suggestions by Chris Heath. It's possible that
 	// an EventableDescriptor will have a descriptor value of -1. That will
 	// happen if EventableDescriptor::Close was called on it. In that case,
@@ -712,35 +742,25 @@ void EventMachine_t::_CleanupSockets()
 	// the socket has already been closed but the descriptor in the ED object
 	// hasn't yet been set to INVALID_SOCKET.
 	// In kqueue, closing a descriptor automatically removes its event filters.
-	int i, j;
-	int nSockets = Descriptors.size();
-	for (i=0, j=0; i < nSockets; i++) {
-		EventableDescriptor *ed = Descriptors[i];
+
+	#ifdef HAVE_EPOLL
+	if (bEpoll) {
+		assert (epfd != -1);
 		assert (ed);
-		if (ed->ShouldDelete()) {
-		#ifdef HAVE_EPOLL
-			if (bEpoll) {
-				assert (epfd != -1);
-				if (ed->GetSocket() != INVALID_SOCKET) {
-					int e = epoll_ctl (epfd, EPOLL_CTL_DEL, ed->GetSocket(), ed->GetEpollEvent());
-					// ENOENT or EBADF are not errors because the socket may be already closed when we get here.
-					if (e && (errno != ENOENT) && (errno != EBADF) && (errno != EPERM)) {
-						char buf [200];
-						snprintf (buf, sizeof(buf)-1, "unable to delete epoll event: %s", strerror(errno));
-						throw std::runtime_error (buf);
-					}
-				}
-				ModifiedDescriptors.erase(ed);
+		if (ed->GetSocket() != INVALID_SOCKET) {
+			int e = epoll_ctl (epfd, EPOLL_CTL_DEL, ed->GetSocket(), ed->GetEpollEvent());
+			// ENOENT or EBADF are not errors because the socket may be already closed when we get here.
+			if (e && (errno != ENOENT) && (errno != EBADF) && (errno != EPERM)) {
+				char buf [200];
+				snprintf (buf, sizeof(buf)-1, "unable to delete epoll event: %s", strerror(errno));
+				throw std::runtime_error (buf);
 			}
-		#endif
-			delete ed;
 		}
-		else
-			Descriptors [j++] = ed;
+		ModifiedDescriptors.erase(ed);
 	}
-	while ((size_t)j < Descriptors.size())
-		Descriptors.pop_back();
+	#endif
 }
+
 
 /*********************************
 EventMachine_t::_ModifyEpollEvent
@@ -870,6 +890,7 @@ bool EventMachine_t::_RunSelectOnce()
 		EventableDescriptor *ed = Descriptors[i];
 		assert (ed);
 		int sd = ed->GetSocket();
+
 		if (ed->IsWatchOnly() && sd == INVALID_SOCKET)
 			continue;
 		assert (sd != INVALID_SOCKET);
@@ -957,8 +978,6 @@ void EventMachine_t::_CleanBadDescriptors()
 
 	for (i = 0; i < Descriptors.size(); i++) {
 		EventableDescriptor *ed = Descriptors[i];
-		if (ed->ShouldDelete())
-			continue;
 
 		int sd = ed->GetSocket();
 

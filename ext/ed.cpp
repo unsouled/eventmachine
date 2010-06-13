@@ -138,7 +138,7 @@ void EventableDescriptor::Close()
 	if (MySocket != INVALID_SOCKET) {
 		shutdown (MySocket, 1);
 		closesocket (MySocket);
-		MySocket = INVALID_SOCKET;
+		SetSocketInvalid();
 	}
 }
 
@@ -157,7 +157,6 @@ bool EventableDescriptor::ShouldDelete()
 	 * Note, if bCloseAfterWriting is true, we check a virtual method to see
 	 * if there is outbound data to write, and only request a close if there is none.
 	 */
-
 	return ((MySocket == INVALID_SOCKET) || bCloseNow || (bCloseAfterWriting && (GetOutboundDataSize() <= 0)));
 }
 
@@ -169,10 +168,12 @@ EventableDescriptor::ScheduleClose
 void EventableDescriptor::ScheduleClose (bool after_writing)
 {
 	// KEEP THIS SYNCHRONIZED WITH ::IsCloseScheduled.
-	if (after_writing)
+	if (after_writing && GetOutboundDataSize() > 0)
 		bCloseAfterWriting = true;
-	else
+	else {
 		bCloseNow = true;
+		MyEventMachine->ScheduleDelete(this);
+	}
 }
 
 
@@ -997,6 +998,10 @@ void ConnectionDescriptor::_WriteOutboundData()
 	#endif
 
 	_UpdateEvents(false, true);
+
+	if (IsCloseScheduled() && OutboundPages.size() == 0) {
+		ScheduleClose(false);
+	}
 
 	if (err) {
 		#ifdef OS_UNIX
@@ -1857,7 +1862,7 @@ InotifyDescriptor::~InotifyDescriptor
 InotifyDescriptor::~InotifyDescriptor()
 {
 	close(MySocket);
-	MySocket = INVALID_SOCKET;
+	SetSocketInvalid();
 }
 
 /***********************
