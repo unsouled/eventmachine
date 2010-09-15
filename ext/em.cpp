@@ -717,6 +717,11 @@ void EventMachine_t::_CleanupSockets()
 	for (i=0, j=0; i < nSockets; i++) {
 		EventableDescriptor *ed = Descriptors[i];
 		assert (ed);
+		//
+	  if (ed->ShouldShutdown()) {
+	    shutdown(ed->GetSocket(), 1);
+    }
+		//
 		if (ed->ShouldDelete()) {
 		#ifdef HAVE_EPOLL
 			if (bEpoll) {

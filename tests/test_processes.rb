@@ -52,6 +52,23 @@ class TestProcesses < Test::Unit::TestCase
     assert( ls.length > 0)
   end
 
+  # patch test
+  def test_deferrable_child_process_with_input
+    cat = ""
+    EM.run {
+      d = EM::DeferrableChildProcess.open( "cat" )
+      d.send_data 'success result!'
+      d.shutdown_wr_after_writing
+      d.callback {|data_from_child|
+        cat = data_from_child
+        EM.stop
+      }
+    }
+    assert( cat == 'success result!')
+  end
+
+
+
   def setup
     $out = nil
     $status = nil
@@ -104,7 +121,8 @@ class TestProcesses < Test::Unit::TestCase
 
   def test_em_system_cmd_arguments
     EM.run{
-      EM.system('sh', '--version', proc{ |process|
+      #EM.system('sh', '--version', proc{ |process|
+      EM.system('bash', '--version', proc{ |process|
       }, proc{ |out,status|
         $out = out
         $status = status

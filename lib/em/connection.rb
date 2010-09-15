@@ -174,6 +174,10 @@ module EventMachine
       EventMachine::close_connection @signature, after_writing
     end
 
+    def shutdown after_writing = false, how
+      EventMachine::shutdown @signature, after_writing, how
+    end
+
     # EventMachine::Connection#detach will remove the given connection from the event loop.
     # The connection's socket remains open and its file descriptor number is returned
     def detach
@@ -191,7 +195,7 @@ module EventMachine
     # close_connection_after_writing will schedule the connection to be closed <i>after</i>
     # all of the outbound data has been safely written to the remote peer.
     #
-    # Depending on the amount of outgoing data and the speed of the network,
+    # Depending on tha amount of outgoing data and the speed of the network,
     # considerable time may elapse between your call to close_connection_after_writing
     # and the actual closing of the socket (at which time the unbind callback will be called
     # by the event loop). During this time, you <i>may not</i> call send_data to transmit
@@ -203,6 +207,18 @@ module EventMachine
     #
     def close_connection_after_writing
       close_connection true
+    end
+
+    def shutdown_wr_after_writing
+      shutdown true, Socket::SHUT_WR
+    end
+
+    def shutdown_rd_after_writing
+      shutdown true, Socket::SHUT_RD
+    end
+
+    def shutdown_rdwr_after_writing
+      shutdown true, Socket::SHUT_RDWR
     end
 
     # EventMachine::Connection#send_data is only called by user code, never by

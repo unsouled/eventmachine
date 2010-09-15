@@ -375,6 +375,20 @@ extern "C" void evma_close_connection (const unsigned long binding, int after_wr
 		ed->ScheduleClose (after_writing ? true : false);
 }
 
+/*********************
+evma_shutdown
+*********************/
+
+extern "C" void evma_shutdown_connection (const unsigned long binding, int after_writing, int how)
+{
+	ensure_eventmachine("evma_shutdown_connection");
+	EventableDescriptor *ed = dynamic_cast <EventableDescriptor*> (Bindable_t::GetObject (binding));
+
+	if (ed)
+	  ed->ScheduleShutdown(after_writing ? true : false, how);
+		//ed->ScheduleClose (after_writing ? true : false);
+}
+
 /***********************************
 evma_report_connection_error_status
 ***********************************/

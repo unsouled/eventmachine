@@ -36,8 +36,7 @@ extern "C" {
 		EM_SSL_HANDSHAKE_COMPLETED = 108,
 		EM_SSL_VERIFY = 109,
 		EM_PROXY_TARGET_UNBOUND = 110,
-		EM_PROXY_COMPLETED = 111
-
+		EM_PROXY_COMPLETED = 111,
 	};
 
 	void evma_initialize_library (EMCallback);
@@ -87,6 +86,7 @@ extern "C" {
 	int evma_send_file_data_to_connection (const unsigned long binding, const char *filename);
 
 	void evma_close_connection (const unsigned long binding, int after_writing);
+	void evma_shutdown_connection (const unsigned long binding, int after_writing, int how);
 	int evma_report_connection_error_status (const unsigned long binding);
 	void evma_signal_loopbreak();
 	void evma_set_timer_quantum (int);

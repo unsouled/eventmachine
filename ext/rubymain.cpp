@@ -471,6 +471,17 @@ static VALUE t_close_connection (VALUE self, VALUE signature, VALUE after_writin
 	return Qnil;
 }
 
+
+/******************
+t_shutdown
+******************/
+
+static VALUE t_shutdown (VALUE self, VALUE signature, VALUE after_writing, VALUE how)
+{
+	evma_shutdown_connection (NUM2ULONG (signature), ((after_writing == Qtrue) ? 1 : 0), how);
+	return Qnil;
+}
+
 /********************************
 t_report_connection_error_status
 ********************************/
@@ -1121,6 +1132,7 @@ extern "C" void Init_rubyeventmachine()
 	rb_define_module_function (EmModule, "send_data", (VALUE(*)(...))t_send_data, 3);
 	rb_define_module_function (EmModule, "send_datagram", (VALUE(*)(...))t_send_datagram, 5);
 	rb_define_module_function (EmModule, "close_connection", (VALUE(*)(...))t_close_connection, 2);
+	rb_define_module_function (EmModule, "shutdown", (VALUE(*)(...))t_shutdown, 3);
 	rb_define_module_function (EmModule, "report_connection_error_status", (VALUE(*)(...))t_report_connection_error_status, 1);
 	rb_define_module_function (EmModule, "connect_server", (VALUE(*)(...))t_connect_server, 2);
 	rb_define_module_function (EmModule, "bind_connect_server", (VALUE(*)(...))t_bind_connect_server, 4);

@@ -53,6 +53,8 @@ EventableDescriptor::EventableDescriptor
 EventableDescriptor::EventableDescriptor (int sd, EventMachine_t *em):
 	bCloseNow (false),
 	bCloseAfterWriting (false),
+	bShutdownNow (false),
+	bShutdownAfterWriting (false),
 	MySocket (sd),
 	EventCallback (NULL),
 	bCallbackUnbind (true),
@@ -142,6 +144,14 @@ void EventableDescriptor::Close()
 	}
 }
 
+/*********************************
+EventableDescriptor::ShouldShutdown
+*********************************/
+
+bool EventableDescriptor::ShouldShutdown()
+{
+	return (bShutdownNow || (bShutdownAfterWriting && (GetOutboundDataSize() <= 0)));
+}
 
 /*********************************
 EventableDescriptor::ShouldDelete
@@ -184,6 +194,19 @@ bool EventableDescriptor::IsCloseScheduled()
 {
 	// KEEP THIS SYNCHRONIZED WITH ::ScheduleClose.
 	return (bCloseNow || bCloseAfterWriting);
+}
+
+
+/**********************************
+EventableDescriptor::Shutdown
+**********************************/
+
+void EventableDescriptor::ScheduleShutdown(bool after_writing, int how)
+{
+  if (after_writing)
+    bShutdownAfterWriting = true;
+  else
+    bShutdownNow = true;
 }
 
 

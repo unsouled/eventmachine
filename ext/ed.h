@@ -53,6 +53,7 @@ class EventableDescriptor: public Bindable_t
 		virtual bool SelectForWrite() = 0;
 
 		// are we scheduled for a close, or in an error state, or already closed?
+		bool ShouldShutdown();
 		bool ShouldDelete();
 		// Do we have any data to write? This is used by ShouldDelete.
 		virtual int GetOutboundDataSize() {return 0;}
@@ -61,6 +62,8 @@ class EventableDescriptor: public Bindable_t
 		virtual void ScheduleClose (bool after_writing);
 		bool IsCloseScheduled();
 		virtual void HandleError(){ ScheduleClose (false); }
+
+    void ScheduleShutdown(bool after_writing, int how);
 
 		void SetEventCallback (EMCallback);
 
@@ -99,6 +102,8 @@ class EventableDescriptor: public Bindable_t
 	private:
 		bool bCloseNow;
 		bool bCloseAfterWriting;
+		bool bShutdownNow;
+		bool bShutdownAfterWriting;
 
 	protected:
 		int MySocket;

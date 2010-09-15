@@ -68,6 +68,7 @@ namespace EM {
 			void SendData (const char *data);
 			void SendData (const char *data, int length);
 			void Close (bool afterWriting);
+			void Shutdown (bool afterWriting);
 	};
 
 
